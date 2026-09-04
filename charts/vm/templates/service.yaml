@@ -1,0 +1,21 @@
+{{- if .Values.service.enabled }}
+{{- $root := . -}}
+{{- range $i := until (int .Values.count) }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $root.Values.namePrefix }}-{{ $i }}-ssh
+  namespace: {{ $root.Values.namespace.name }}
+  labels:
+    {{- include "vm.labels" $root | nindent 4 }}
+spec:
+  type: ClusterIP
+  selector:
+    kubevirt.io/domain: {{ $root.Values.namePrefix }}-{{ $i }}
+  ports:
+    - name: ssh
+      port: {{ $root.Values.service.port }}
+      targetPort: 22
+{{- end }}
+{{- end }}

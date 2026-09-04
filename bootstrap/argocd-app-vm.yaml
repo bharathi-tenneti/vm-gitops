@@ -1,0 +1,43 @@
+# VirtualMachine workloads for the dev cluster.
+# Multi-source Application (needs OpenShift GitOps >= 1.8 / Argo CD >= 2.6).
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: vm-workloads-dev
+  namespace: openshift-gitops
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  sources:
+    - repoURL: https://github.com/btenneti/vm-gitops.git
+      targetRevision: main
+      path: charts/vm
+      helm:
+        valueFiles:
+          - $values/clusters/dev/vm-values.yaml
+    - repoURL: https://github.com/btenneti/vm-gitops.git
+      targetRevision: main
+      ref: values
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: vm-demo
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+  ignoreDifferences:
+    # virt-controller / CDI rewrite these at runtime.
+    - group: kubevirt.io
+      kind: VirtualMachine
+      jsonPointers:
+        - /spec/template/spec/volumes
+        - /spec/dataVolumeTemplates
+        - /spec/running
+    - group: cdi.kubevirt.io
+      kind: DataVolume
+      jqPathExpressions:
+        - .spec

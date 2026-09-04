@@ -1,0 +1,33 @@
+# Overrides for charts/vm on the "dev" cluster.
+namespace:
+  name: vm-demo
+
+namePrefix: rhel9
+count: 2
+
+source:
+  dataSource: rhel9
+  namespace: vm-images
+
+instancetype:
+  name: u1.medium
+preference:
+  name: rhel.9
+
+rootDisk:
+  size: 30Gi
+  storageClassName: ocs-storagecluster-ceph-rbd   # <- this cluster's SC
+
+runStrategy: Always
+
+network:
+  type: masquerade
+
+cloudInit:
+  user: cloud-user
+  sshAuthorizedKeys:
+    - "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5... btenneti@redhat.com"   # <- replace
+
+service:
+  enabled: true
+  port: 22

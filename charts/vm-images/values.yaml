@@ -1,0 +1,27 @@
+# Defaults — override per cluster in clusters/<cluster>/images-values.yaml
+namespace:
+  name: vm-images
+  create: true
+
+# Where the golden image lives (published by packer/build.sh)
+image:
+  repo: quay.io/btenneti/rhel9-vm
+  tag: "latest"          # bump per build; or set image.digest for immutability
+  digest: ""             # e.g. sha256:...; takes precedence over tag when set
+  pullSecret: registry-pull   # Secret in namespace.name; create out-of-band (sealed/ESO)
+  pullMethod: node       # node | pod
+
+dataImportCron:
+  name: rhel9-golden
+  managedDataSource: rhel9      # DataSource name the VM chart references
+  schedule: "0 */6 * * *"       # how often CDI re-checks the registry
+  importsToKeep: 3
+  garbageCollect: Outdated
+
+# Golden PVC spec — storageClassName MUST be set per cluster
+storage:
+  size: 30Gi
+  storageClassName: ""          # REQUIRED per cluster
+  accessModes:
+    - ReadWriteMany              # RWX enables fast cross-node cloning; fall back to RWO
+  volumeMode: Block

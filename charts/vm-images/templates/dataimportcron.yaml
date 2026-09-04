@@ -1,0 +1,30 @@
+apiVersion: cdi.kubevirt.io/v1beta1
+kind: DataImportCron
+metadata:
+  name: {{ .Values.dataImportCron.name }}
+  namespace: {{ .Values.namespace.name }}
+spec:
+  schedule: "{{ .Values.dataImportCron.schedule }}"
+  managedDataSource: {{ .Values.dataImportCron.managedDataSource }}
+  importsToKeep: {{ .Values.dataImportCron.importsToKeep }}
+  garbageCollect: {{ .Values.dataImportCron.garbageCollect }}
+  template:
+    spec:
+      source:
+        registry:
+          url: "docker://{{ include "vm-images.imageRef" . }}"
+          pullMethod: {{ .Values.image.pullMethod }}
+          {{- if .Values.image.pullSecret }}
+          secretRef: {{ .Values.image.pullSecret }}
+          {{- end }}
+      storage:
+        {{- if not .Values.storage.storageClassName }}
+        {{- fail "storage.storageClassName must be set per cluster (clusters/<cluster>/images-values.yaml)" }}
+        {{- end }}
+        storageClassName: {{ .Values.storage.storageClassName }}
+        volumeMode: {{ .Values.storage.volumeMode }}
+        accessModes:
+          {{- toYaml .Values.storage.accessModes | nindent 10 }}
+        resources:
+          requests:
+            storage: {{ .Values.storage.size }}

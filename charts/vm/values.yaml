@@ -1,0 +1,44 @@
+# Defaults — override per cluster in clusters/<cluster>/vm-values.yaml
+namespace:
+  name: vm-demo
+  create: true
+
+# How many VMs and how they are named: <namePrefix>-0, <namePrefix>-1, ...
+namePrefix: rhel9
+count: 1
+
+# Root disk cloned from the DataSource that vm-images' DataImportCron manages.
+source:
+  dataSource: rhel9
+  namespace: vm-images
+
+instancetype:
+  name: u1.medium        # cluster-wide VirtualMachineClusterInstancetype
+  kind: VirtualMachineClusterInstancetype
+preference:
+  name: rhel.9
+  kind: VirtualMachineClusterPreference
+
+rootDisk:
+  size: 30Gi
+  storageClassName: ""   # REQUIRED per cluster (target for the cloned PVC)
+
+runStrategy: Always      # Always | RerunOnFailure | Manual | Halted
+
+network:
+  type: masquerade       # masquerade (pod net) | bridge (needs multusNetwork)
+  multusNetworkName: ""
+
+cloudInit:
+  user: cloud-user
+  # sshAuthorizedKeys: list of public keys injected into the user
+  sshAuthorizedKeys: []
+  # extra raw #cloud-config appended verbatim
+  extraUserData: ""
+
+# Optional ClusterIP service exposing SSH to in-cluster clients
+service:
+  enabled: false
+  port: 22
+
+labels: {}

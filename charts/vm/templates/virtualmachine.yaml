@@ -1,0 +1,74 @@
+{{- if not .Values.rootDisk.storageClassName }}
+{{- fail "rootDisk.storageClassName must be set per cluster (clusters/<cluster>/vm-values.yaml)" }}
+{{- end }}
+{{- $root := . -}}
+{{- range $i := until (int .Values.count) }}
+---
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: {{ $root.Values.namePrefix }}-{{ $i }}
+  namespace: {{ $root.Values.namespace.name }}
+  labels:
+    {{- include "vm.labels" $root | nindent 4 }}
+spec:
+  runStrategy: {{ $root.Values.runStrategy }}
+  instancetype:
+    name: {{ $root.Values.instancetype.name }}
+    kind: {{ $root.Values.instancetype.kind }}
+  preference:
+    name: {{ $root.Values.preference.name }}
+    kind: {{ $root.Values.preference.kind }}
+  dataVolumeTemplates:
+    - metadata:
+        name: {{ $root.Values.namePrefix }}-{{ $i }}-root
+      spec:
+        storage:
+          storageClassName: {{ $root.Values.rootDisk.storageClassName }}
+          resources:
+            requests:
+              storage: {{ $root.Values.rootDisk.size }}
+        sourceRef:
+          kind: DataSource
+          name: {{ $root.Values.source.dataSource }}
+          namespace: {{ $root.Values.source.namespace }}
+  template:
+    metadata:
+      labels:
+        kubevirt.io/domain: {{ $root.Values.namePrefix }}-{{ $i }}
+        {{- include "vm.labels" $root | nindent 8 }}
+    spec:
+      domain:
+        devices:
+          disks:
+            - name: root
+              disk:
+                bus: virtio
+            - name: cloudinit
+              disk:
+                bus: virtio
+          interfaces:
+            - name: default
+              {{- if eq $root.Values.network.type "bridge" }}
+              bridge: {}
+              {{- else }}
+              masquerade: {}
+              {{- end }}
+        networkInterfaceMultiqueue: true
+      networks:
+        - name: default
+          {{- if eq $root.Values.network.type "bridge" }}
+          multus:
+            networkName: {{ $root.Values.network.multusNetworkName }}
+          {{- else }}
+          pod: {}
+          {{- end }}
+      volumes:
+        - name: root
+          dataVolume:
+            name: {{ $root.Values.namePrefix }}-{{ $i }}-root
+        - name: cloudinit
+          cloudInitNoCloud:
+            userData: |-
+              {{- include "vm.cloudInitUserData" $root | nindent 14 }}
+{{- end }}

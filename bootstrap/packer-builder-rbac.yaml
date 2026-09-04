@@ -1,0 +1,55 @@
+# One-time, applied by a cluster-admin on the BUILD cluster (not synced by Argo CD).
+#   oc apply -f bootstrap/packer-builder-rbac.yaml
+# Then: packer/make-kubeconfig.sh > packer/kubeconfig
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: vm-build
+  labels:
+    kubevirt.io/allow-in-cluster-import: "true"
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: packer
+  namespace: vm-build
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: packer-builder
+  namespace: vm-build
+rules:
+  - apiGroups: ["kubevirt.io"]
+    resources: ["virtualmachines", "virtualmachineinstances"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  - apiGroups: ["subresources.kubevirt.io"]
+    resources: ["virtualmachineinstances/vnc", "virtualmachineinstances/console", "virtualmachines/start", "virtualmachines/stop", "virtualmachines/restart"]
+    verbs: ["get", "update"]
+  - apiGroups: ["cdi.kubevirt.io"]
+    resources: ["datavolumes"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  - apiGroups: ["export.kubevirt.io"]
+    resources: ["virtualmachineexports"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  - apiGroups: [""]
+    resources: ["persistentvolumeclaims", "pods", "services"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  - apiGroups: [""]
+    resources: ["pods/portforward"]
+    verbs: ["create", "get"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: packer-builder
+  namespace: vm-build
+subjects:
+  - kind: ServiceAccount
+    name: packer
+    namespace: vm-build
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: packer-builder

@@ -1,0 +1,16 @@
+# Overrides for charts/vm-images on the "dev" cluster.
+image:
+  repo: quay.io/btenneti/rhel-10-golden
+  tag: "latest"          # <- bump to the image_tag you passed to `packer build`
+  # digest: "sha256:..." # <- or pin immutably; wins over tag
+  pullSecret: registry-pull
+
+storage:
+  storageClassName: ocs-storagecluster-ceph-rbd   # <- this cluster's SC
+  accessModes:
+    - ReadWriteMany
+  volumeMode: Block
+  size: 30Gi
+
+dataImportCron:
+  schedule: "0 */6 * * *"

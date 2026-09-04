@@ -1,0 +1,41 @@
+# DataImportCron / golden image import for the dev cluster.
+# Multi-source Application (needs OpenShift GitOps >= 1.8 / Argo CD >= 2.6).
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: vm-images-dev
+  namespace: openshift-gitops
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  sources:
+    - repoURL: https://github.com/btenneti/vm-gitops.git
+      targetRevision: main
+      path: charts/vm-images
+      helm:
+        valueFiles:
+          - $values/clusters/dev/images-values.yaml
+    - repoURL: https://github.com/btenneti/vm-gitops.git
+      targetRevision: main
+      ref: values
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: vm-images
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+  ignoreDifferences:
+    # CDI mutates DataVolumes it spawns from the cron; don't fight it.
+    - group: cdi.kubevirt.io
+      kind: DataVolume
+      jqPathExpressions:
+        - .spec
+    - group: cdi.kubevirt.io
+      kind: DataImportCron
+      jsonPointers:
+        - /status
