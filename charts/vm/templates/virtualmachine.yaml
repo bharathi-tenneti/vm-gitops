@@ -54,7 +54,7 @@ spec:
               {{- else }}
               masquerade: {}
               {{- end }}
-        networkInterfaceMultiqueue: true
+          networkInterfaceMultiqueue: true
       networks:
         - name: default
           {{- if eq $root.Values.network.type "bridge" }}
